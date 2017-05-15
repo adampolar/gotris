@@ -13,61 +13,60 @@ type Piece struct {
 }
 type PieceCoords [4][2]int
 
-func doTheStuff(command Command,
-	currentPiece Piece,
-	gameBoard GameBoard,
-	currentBag []int,
-	currentScore int) (
-	score int,
-	gameOver bool,
-	newPiece Piece,
-	newGameBoard GameBoard,
-	newBag []int) {
+type GameState struct {
+	score        int
+	gameOver     bool
+	currentPiece Piece
+	gameBoard    GameBoard
+	currentBag   []int
+}
+
+func (gameState GameState) doTheStuff(command Command) GameState {
 	var proposedPieceLocation Piece
 	if command != TIMEDROP && command != DROP {
 
 		if command == SOFTDROP {
-			proposedPieceLocation = translatePiece(0, 1, currentPiece)
+			proposedPieceLocation = translatePiece(0, 1, gameState.currentPiece)
 		}
 		if command == LEFT {
-			proposedPieceLocation = translatePiece(-1, 0, currentPiece)
+			proposedPieceLocation = translatePiece(-1, 0, gameState.currentPiece)
 		}
 		if command == RIGHT {
-			proposedPieceLocation = translatePiece(1, 0, currentPiece)
+			proposedPieceLocation = translatePiece(1, 0, gameState.currentPiece)
 		}
 		if command == CLOCKWISE || command == ANTICLOCKWISE {
 			for i := 0; i < 4; i++ {
-				proposedPieceLocation = rotatePiece(i, command == CLOCKWISE, currentPiece)
-				if !checkForCollisions(proposedPieceLocation, gameBoard) {
+				proposedPieceLocation = rotatePiece(i, command == CLOCKWISE, gameState.currentPiece)
+				if !checkForCollisions(proposedPieceLocation, gameState.gameBoard) {
 					break
 				}
 			}
 		}
-		if !checkForCollisions(proposedPieceLocation, gameBoard) && !getHasLanded(gameBoard, proposedPieceLocation) {
-			currentPiece = proposedPieceLocation
+		if !checkForCollisions(proposedPieceLocation, gameState.gameBoard) && !getHasLanded(gameState.gameBoard, proposedPieceLocation) {
+			gameState.currentPiece = proposedPieceLocation
 		}
 	} else {
-		proposedPieceLocation = translatePiece(0, 1, currentPiece)
+		proposedPieceLocation = translatePiece(0, 1, gameState.currentPiece)
 
-		landed := getHasLanded(gameBoard, proposedPieceLocation)
+		landed := getHasLanded(gameState.gameBoard, proposedPieceLocation)
 
 		if command == DROP {
 			for !landed {
-				currentPiece = proposedPieceLocation
-				proposedPieceLocation = translatePiece(0, 1, currentPiece)
-				landed = getHasLanded(gameBoard, proposedPieceLocation)
+				gameState.currentPiece = proposedPieceLocation
+				proposedPieceLocation = translatePiece(0, 1, gameState.currentPiece)
+				landed = getHasLanded(gameState.gameBoard, proposedPieceLocation)
 			}
 		}
 
 		if landed {
 			for i := 0; i < 4; i++ {
-				if currentPiece.Coords[i][1] >= 0 {
-					gameBoard[currentPiece.Coords[i][1]][currentPiece.Coords[i][0]] = currentPiece.Color
+				if gameState.currentPiece.Coords[i][1] >= 0 {
+					gameState.gameBoard[gameState.currentPiece.Coords[i][1]][gameState.currentPiece.Coords[i][0]] = gameState.currentPiece.Color
 				}
 			}
 			//check if line has been made
 			numberOfLinesMade := 0
-			for i, v := range gameBoard {
+			for i, v := range gameState.gameBoard {
 				lineBeenMade := true
 				for _, u := range v {
 					lineBeenMade = lineBeenMade && u != 0
@@ -75,37 +74,32 @@ func doTheStuff(command Command,
 				if lineBeenMade {
 					numberOfLinesMade++
 					for j := i; j > 0; j-- {
-						for k := range gameBoard[j] {
-							gameBoard[j][k] = gameBoard[j-1][k]
+						for k := range gameState.gameBoard[j] {
+							gameState.gameBoard[j][k] = gameState.gameBoard[j-1][k]
 						}
 					}
-					for l := range gameBoard[0] {
-						gameBoard[0][l] = 0
+					for l := range gameState.gameBoard[0] {
+						gameState.gameBoard[0][l] = 0
 					}
 				}
 			}
-			score = currentScore + [5]int{0, 100, 300, 550, 800}[numberOfLinesMade]
-			if len(currentBag) == 3 {
-				currentBag = append(currentBag, rand.Perm(7)...)
+			gameState.score = gameState.score + [5]int{0, 100, 300, 550, 800}[numberOfLinesMade]
+			if len(gameState.currentBag) == 3 {
+				gameState.currentBag = append(gameState.currentBag, rand.Perm(7)...)
 			}
 			//check game is over
 			for i := 0; i < 4; i++ {
-				if currentPiece.Coords[i][1] < 2 {
-					gameOver = true
+				if gameState.currentPiece.Coords[i][1] < 2 {
+					gameState.gameOver = true
 				}
 			}
-			currentPiece, currentBag = getNextPieceAsAppliedToBoard(currentBag)
+			gameState.currentPiece, gameState.currentBag = getNextPieceAsAppliedToBoard(gameState.currentBag)
 		} else {
-			currentPiece = proposedPieceLocation
+			gameState.currentPiece = proposedPieceLocation
 		}
 	}
-	if score == 0 {
-		score = currentScore
-	}
-	newGameBoard = gameBoard
-	newPiece = currentPiece
-	newBag = currentBag
-	return
+	return gameState
+
 }
 
 func getNextPieceAsAppliedToBoard(currentBag []int) (piece Piece, newCurrentBag []int) {

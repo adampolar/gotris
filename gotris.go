@@ -9,13 +9,15 @@ func main() {
 	initUI()
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	var currentBag []int
-	score := 0
-	var currentPiece Piece
-	var gameBoard GameBoard
-	var gameOver = false
-	currentBag = rand.Perm(7)
-	currentPiece, currentBag = getNextPieceAsAppliedToBoard(currentBag)
+	var gameState GameState
+
+	//var currentBag []int
+	//score := 0
+	//var currentPiece Piece
+	//var gameBoard GameBoard
+	//var gameOver = false
+	gameState.currentBag = rand.Perm(7)
+	gameState.currentPiece, gameState.currentBag = getNextPieceAsAppliedToBoard(gameState.currentBag)
 
 	commandChannel := make(chan Command, 100)
 	stateChannel := make(chan bool)
@@ -29,14 +31,15 @@ func main() {
 		select {
 		case <-ticker.C:
 			//tick through game
-			score, gameOver, currentPiece, gameBoard, currentBag = doTheStuff(TIMEDROP, currentPiece, gameBoard, currentBag, score)
-			//print(score)
-			drawUI(gameBoard, currentPiece, currentBag, score)
+			//score, gameOver, currentPiece, gameBoard, currentBag = doTheStuff(TIMEDROP, currentPiece, gameBoard, currentBag, score)
+			gameState = gameState.doTheStuff(TIMEDROP)
+			drawUI(gameState.gameBoard, gameState.currentPiece, gameState.currentBag, gameState.score)
 		case command := <-commandChannel:
-			score, gameOver, currentPiece, gameBoard, currentBag = doTheStuff(command, currentPiece, gameBoard, currentBag, score)
-			drawUI(gameBoard, currentPiece, currentBag, score)
+			//score, gameOver, currentPiece, gameBoard, currentBag = doTheStuff(command, currentPiece, gameBoard, currentBag, score)
+			gameState = gameState.doTheStuff(command)
+			drawUI(gameState.gameBoard, gameState.currentPiece, gameState.currentBag, gameState.score)
 		}
-		if gameOver {
+		if gameState.gameOver {
 			drawGameOver()
 			setCursorToEnd()
 			ticker.Stop()
