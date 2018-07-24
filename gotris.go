@@ -25,7 +25,7 @@ func main() {
 
 	go listenForCommands(commandChannel, stateChannel, replyChannel)
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 
 	for {
 		select {

@@ -10,7 +10,7 @@ const TETRIMINO_CHAR = "□"
 
 func printAt(x int, y int, toPrint string, color int) {
 
-	tm.MoveCursor(y, x)
+	tm.MoveCursor(x, y)
 	tm.Print(tm.Color(toPrint, color))
 	tm.Flush()
 	//fmt.Fprintf(new(bytes.Buffer), "\033[%d;%dH%s", y, x, toPrint)
